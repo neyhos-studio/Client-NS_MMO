@@ -22,7 +22,7 @@ public class Client : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            SendMessage();
+            SendMessage("USER|ACTION|DATA");
         }
     }
     /// <summary> 	
@@ -48,7 +48,7 @@ public class Client : MonoBehaviour
     {
         try
         {
-            socketConnection = new TcpClient("51.91.156.75", 5757);
+            socketConnection = new TcpClient("127.0.0.1", 5757); //51.91.156.75
             Byte[] bytes = new Byte[1024];
             while (true)
             {
@@ -76,7 +76,7 @@ public class Client : MonoBehaviour
     /// <summary> 	
     /// Send message to server using socket connection. 	
     /// </summary> 	
-    private void SendMessage()
+    private void SendMessage(string message)
     {
         if (socketConnection == null)
         {
@@ -88,9 +88,8 @@ public class Client : MonoBehaviour
             NetworkStream stream = socketConnection.GetStream();
             if (stream.CanWrite)
             {
-                string clientMessage = "This is a message from one of your clients.";
                 // Convert string message to byte array.                 
-                byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
+                byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(message);
                 // Write byte array to socketConnection stream.                 
                 stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
                 Debug.Log("Client sent his message - should be received by server");
