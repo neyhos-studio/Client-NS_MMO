@@ -1,20 +1,34 @@
-﻿using System;
+﻿using Application.Client.Constants;
+using Application.Client.Entities.Client;
+using Application.Client.Entities.Server;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class Client : MonoBehaviour
+public class ClientSocket : MonoBehaviour
 {
+    #region GUI 	
+    private Text email;
+    private Text password;
+    #endregion
+
     #region private members 	
     private TcpClient socketConnection;
     private Thread clientReceiveThread;
+    private Client me;
     #endregion
+
     // Use this for initialization 	
     void Start()
     {
+        email = GameObject.Find("ThisIsTheUserEmail").GetComponent<Text>();
+        password = GameObject.Find("ThisIsTheUserPassword").GetComponent<Text>();
+
         ConnectToTcpServer();
     }
     // Update is called once per frame
@@ -22,9 +36,22 @@ public class Client : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            SendMessage("USER|ACTION|DATA");
+            ClientMessage jump = new ClientMessage("", "INPUT", new string[] { "MOVE", "JUMP" });
+            sendMessage(jump);
+        }
+        if (Input.GetKeyUp(KeyCode.Escape))
+        {
+            ClientMessage disconnect = new ClientMessage("", "DISCONNECTION", new string[] { me.getToken() });
+            sendMessage(disconnect);
         }
     }
+
+    public void connect()
+    {
+        ClientMessage connect = new ClientMessage("0", "CONNECTION", new string[] { email.text, password.text });
+        sendMessage(connect);
+    }
+
     /// <summary> 	
     /// Setup socket connection. 	
     /// </summary> 	
@@ -41,6 +68,7 @@ public class Client : MonoBehaviour
             Debug.Log("On client connect exception " + e);
         }
     }
+
     /// <summary> 	
     /// Runs in background clientReceiveThread; Listens for incomming data. 	
     /// </summary>     
@@ -61,9 +89,14 @@ public class Client : MonoBehaviour
                     {
                         var incommingData = new byte[length];
                         Array.Copy(bytes, 0, incommingData, 0, length);
+
                         // Convert byte array to string message. 						
                         string serverMessage = Encoding.ASCII.GetString(incommingData);
                         Debug.Log("server message received as: " + serverMessage);
+
+
+                        // Client message filter and process
+                        RequestManager(serverMessage);
                     }
                 }
             }
@@ -73,10 +106,48 @@ public class Client : MonoBehaviour
             Debug.Log("Socket exception: " + socketException);
         }
     }
+
+    private void RequestManager(string clientMessage)
+    {
+        // Put the client string message into an object ClientMessage
+        ServerMessage msg = new ServerMessage(clientMessage);
+
+        // Client message is process depending on the ACTION send;
+        switch (msg.action)
+        {
+            case ConstsActions.DISCONNECTION:
+                this.me.statusUser = msg.data[0];
+                Console.WriteLine("You are now Offline.");
+                break;
+            case ConstsActions.CONNECTION:
+                if (msg.data[0] == "SUCCESS")
+                {
+                    this.me = new Client(
+                        int.Parse(msg.data[1]),
+                        int.Parse(msg.data[2]),
+                        msg.data[3],
+                        msg.data[4],
+                        msg.data[5],
+                        Convert.ToDateTime(msg.data[6]),
+                        msg.data[7],
+                        msg.data[8]
+                        );
+                    Console.WriteLine("You are connected as " + this.me.getToken() +".");
+                }
+                else if (msg.data[0] == "FAIL")
+                {
+                    Console.WriteLine("Connection failed");
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
     /// <summary> 	
     /// Send message to server using socket connection. 	
     /// </summary> 	
-    private void SendMessage(string message)
+    private void sendMessage(ClientMessage serverMessage)
     {
         if (socketConnection == null)
         {
@@ -89,7 +160,7 @@ public class Client : MonoBehaviour
             if (stream.CanWrite)
             {
                 // Convert string message to byte array.                 
-                byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(message);
+                byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(serverMessage.getMessage());
                 // Write byte array to socketConnection stream.                 
                 stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
                 Debug.Log("Client sent his message - should be received by server");
@@ -100,4 +171,5 @@ public class Client : MonoBehaviour
             Debug.Log("Socket exception: " + socketException);
         }
     }
+
 }
