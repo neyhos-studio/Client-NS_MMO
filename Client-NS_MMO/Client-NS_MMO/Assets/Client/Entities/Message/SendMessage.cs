@@ -1,17 +1,17 @@
 ﻿using System;
 
-namespace Application.Client.Entities.Client
+namespace Application.Client.Entities.Message
 {
-    class ClientMessage
+    class SendMessage
     {
         public string id { get; }
         public string action { get; }
         public string[] data { get; }
 
-        public ClientMessage() { }
+        public SendMessage() { }
 
 
-        public ClientMessage(string id, string action, string[] data)
+        public SendMessage(string id, string action, string[] data)
         {
             this.id = id;
             this.action = action;

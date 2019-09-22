@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Application.Client.Entities.Server
+namespace Application.Client.Entities.Message
 {
     class ServerProperties
     {

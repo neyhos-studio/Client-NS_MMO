@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace Application.Client.Entities.Client
+namespace Application.Client.Entities.Message
 {
     class Client
     {

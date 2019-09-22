@@ -1,15 +1,15 @@
 ﻿using System;
 
-namespace Application.Client.Entities.Server
+namespace Application.Client.Entities.Message
 {
-    class ServerMessage
+    class ReceivedMessage
     {
         public string id { get; }
         public string action { get; }
         public string[] data { get; }
 
 
-        public ServerMessage(string clientMessage)
+        public ReceivedMessage(string clientMessage)
         {
             string[] message_index;
             try

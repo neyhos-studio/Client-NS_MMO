@@ -1,6 +1,5 @@
 ﻿using Application.Client.Constants;
-using Application.Client.Entities.Client;
-using Application.Client.Entities.Server;
+using Application.Client.Entities.Message;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -28,27 +27,32 @@ public class ClientSocket : MonoBehaviour
     {
         email = GameObject.Find("ThisIsTheUserEmail").GetComponent<Text>();
         password = GameObject.Find("ThisIsTheUserPassword").GetComponent<Text>();
+        this.me = new Client(0, 0, String.Empty, String.Empty, String.Empty, DateTime.Now, String.Empty, "Hors ligne");
 
         ConnectToTcpServer();
     }
+
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (this.me.statusUser != "Hors ligne")
         {
-            ClientMessage jump = new ClientMessage("", "INPUT", new string[] { "MOVE", "JUMP" });
-            sendMessage(jump);
-        }
-        if (Input.GetKeyUp(KeyCode.Escape))
-        {
-            ClientMessage disconnect = new ClientMessage("", "DISCONNECTION", new string[] { me.getToken() });
-            sendMessage(disconnect);
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                SendMessage jump = new SendMessage("", "INPUT", new string[] { "MOVE", "JUMP" });
+                sendMessage(jump);
+            }
+            if (Input.GetKeyUp(KeyCode.Escape))
+            {
+                SendMessage disconnect = new SendMessage("0", "DISCONNECTION", new string[] { me.getToken() });
+                sendMessage(disconnect);
+            }
         }
     }
 
     public void connect()
     {
-        ClientMessage connect = new ClientMessage("0", "CONNECTION", new string[] { email.text, password.text });
+        SendMessage connect = new SendMessage("0", "CONNECTION", new string[] { email.text, password.text });
         sendMessage(connect);
     }
 
@@ -92,7 +96,7 @@ public class ClientSocket : MonoBehaviour
 
                         // Convert byte array to string message. 						
                         string serverMessage = Encoding.ASCII.GetString(incommingData);
-                        Debug.Log("server message received as: " + serverMessage);
+                        Debug.Log("Server send : " + serverMessage);
 
 
                         // Client message filter and process
@@ -110,14 +114,14 @@ public class ClientSocket : MonoBehaviour
     private void RequestManager(string clientMessage)
     {
         // Put the client string message into an object ClientMessage
-        ServerMessage msg = new ServerMessage(clientMessage);
+        ReceivedMessage msg = new ReceivedMessage(clientMessage);
 
         // Client message is process depending on the ACTION send;
         switch (msg.action)
         {
             case ConstsActions.DISCONNECTION:
                 this.me.statusUser = msg.data[0];
-                Console.WriteLine("You are now Offline.");
+                Debug.Log("You are now Offline.");
                 break;
             case ConstsActions.CONNECTION:
                 if (msg.data[0] == "SUCCESS")
@@ -132,11 +136,11 @@ public class ClientSocket : MonoBehaviour
                         msg.data[7],
                         msg.data[8]
                         );
-                    Console.WriteLine("You are connected as " + this.me.getToken() +".");
+                    Debug.Log("You are connected as " + this.me.getToken() + ".");
                 }
                 else if (msg.data[0] == "FAIL")
                 {
-                    Console.WriteLine("Connection failed");
+                    Debug.Log("Connection failed");
                 }
                 break;
             default:
@@ -147,7 +151,7 @@ public class ClientSocket : MonoBehaviour
     /// <summary> 	
     /// Send message to server using socket connection. 	
     /// </summary> 	
-    private void sendMessage(ClientMessage serverMessage)
+    private void sendMessage(SendMessage serverMessage)
     {
         if (socketConnection == null)
         {
@@ -163,7 +167,7 @@ public class ClientSocket : MonoBehaviour
                 byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(serverMessage.getMessage());
                 // Write byte array to socketConnection stream.                 
                 stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
-                Debug.Log("Client sent his message - should be received by server");
+                Debug.Log("You send : " + serverMessage.getMessage());
             }
         }
         catch (SocketException socketException)
